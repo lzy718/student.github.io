@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="个人项目实战：二维码签到系统 后端端开发总结
+一、个人职责说明
+在本次二维码签到系统团队开发中，我负责后端所有开发工作，包括技术选型、数据库设计、工具类封装、核心业务接口开发、数据校验、安全逻辑实现与接口联调。">
+<meta property="og:title" content="使用二维码实现签到技术-后端">
+<meta property="og:description" content="个人项目实战：二维码签到系统 后端端开发总结
+一、个人职责说明
+在本次二维码签到系统团队开发中，我负责后端所有开发工作，包括技术选型、数据库设计、工具类封装、核心业务接口开发、数据校验、安全逻辑实现与接口联调。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://lzy718.github.io/student.github.io/post/shi-yong-er-wei-ma-shi-xian-qian-dao-ji-shu---hou-duan.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>使用二维码实现签到技术-后端</title>
+
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">使用二维码实现签到技术-后端</h1>
+<div class="title-right">
+    <a href="https://lzy718.github.io/student.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/lzy718/student.github.io/issues/6" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><p>个人项目实战：二维码签到系统 后端端开发总结<br>
+一、个人职责说明<br>
+在本次二维码签到系统团队开发中，我负责后端所有开发工作，包括技术选型、数据库设计、工具类封装、核心业务接口开发、数据校验、安全逻辑实现与接口联调。独立完成整套后端服务，为前端页面提供稳定、安全、可调用的接口支撑，实现二维码动态生成、时效控制、签到校验、数据持久化全套核心能力。</p>
+<p>二、后端技术选型<br>
+结合项目轻量化、高安全性、易部署的校园考勤场景，选用稳定成熟的后端技术栈：</p>
+<ul>
+<li>核心框架：SpringBoot 2.7.x，快速构建Web接口，简化配置</li>
+<li>二维码处理：Google ZXing 开源工具，实现离线二维码生成</li>
+<li>数据库：MySQL 存储活动与签到数据</li>
+<li>持久层框架：MyBatis-Plus，简化CRUD开发</li>
+<li>辅助工具：Lombok、Hutool，简化代码与日期、令牌处理</li>
+<li>视图模板：Thymeleaf，支持后端跳转前端页面</li>
+</ul>
+<p>三、数据库结构设计<br>
+为适配签到业务，我设计两张核心数据表，并通过联合唯一索引从数据库底层杜绝重复签到，保障数据严谨性。<br>
+3.1 签到活动表<br>
+用于存储每一次签到活动信息、唯一签到令牌与二维码过期时间。<br>
+CREATE TABLE <code class="notranslate">sign_activity</code> (<br>
+<code class="notranslate">id</code> bigint AUTO_INCREMENT COMMENT '活动ID',<br>
+<code class="notranslate">activity_name</code> varchar(100) NOT NULL COMMENT '活动名称',<br>
+<code class="notranslate">sign_token</code> varchar(64) NOT NULL COMMENT '签到唯一令牌',<br>
+<code class="notranslate">expire_time</code> datetime NOT NULL COMMENT '二维码过期时间',<br>
+<code class="notranslate">create_time</code> datetime DEFAULT CURRENT_TIMESTAMP,<br>
+PRIMARY KEY (<code class="notranslate">id</code>),<br>
+UNIQUE KEY <code class="notranslate">uk_token</code> (<code class="notranslate">sign_token</code>)<br>
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='签到活动表';<br>
+3.2 签到记录表<br>
+记录用户签到数据，设置活动ID+用户ID联合唯一索引，防止重复打卡。<br>
+CREATE TABLE <code class="notranslate">sign_record</code> (<br>
+<code class="notranslate">id</code> bigint AUTO_INCREMENT,<br>
+<code class="notranslate">activity_id</code> bigint NOT NULL COMMENT '活动ID',<br>
+<code class="notranslate">user_id</code> bigint NOT NULL COMMENT '用户ID',<br>
+<code class="notranslate">sign_time</code> datetime DEFAULT CURRENT_TIMESTAMP COMMENT '签到时间',<br>
+PRIMARY KEY (<code class="notranslate">id</code>),<br>
+UNIQUE KEY <code class="notranslate">uk_activity_user</code> (<code class="notranslate">activity_id</code>,<code class="notranslate">user_id</code>)<br>
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='签到记录表';</p>
+<p>四、核心工具类开发<br>
+我基于ZXing封装二维码工具类，无需生成本地文件，直接将图片流响应给浏览器，适配前端动态渲染，同时优化编码、容错率，避免扫码失败、乱码问题。<br>
+import com.google.zxing.BarcodeFormat;<br>
+import com.google.zxing.EncodeHintType;<br>
+import com.google.zxing.client.j2se.MatrixToImageWriter;<br>
+import com.google.zxing.qrcode.QRCodeWriter;<br>
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;<br>
+import org.springframework.stereotype.Component;</p>
+<p>import javax.servlet.http.HttpServletResponse;<br>
+import java.io.OutputStream;<br>
+import java.util.HashMap;<br>
+import java.util.Map;</p>
+<p><a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/component/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/component">@component</a><br>
+public class QRCodeUtil {<br>
+public void createQrCode(String content, int width, int height, HttpServletResponse response) throws Exception {<br>
+response.setContentType("image/png");<br>
+Map&lt;EncodeHintType, Object&gt; hints = new HashMap&lt;&gt;();<br>
+hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);<br>
+hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");<br>
+hints.put(EncodeHintType.MARGIN, 1);</p>
+<pre class="notranslate"><code class="notranslate">    QRCodeWriter writer = new QRCodeWriter();
+    var matrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height, hints);
+    try (OutputStream os = response.getOutputStream()) {
+        MatrixToImageWriter.writeToStream(matrix, "PNG", os);
+    }
+}
+</code></pre>
+<p>}</p>
+<p>五、实体类开发<br>
+根据数据表结构编写对应实体类，使用Lombok简化代码，实现字段与数据库精准映射。<br>
+5.1 活动实体<br>
+import com.baomidou.mybatisplus.annotation.TableName;<br>
+import lombok.Data;<br>
+import java.time.LocalDateTime;</p>
+<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DaTa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DaTa">@DaTa</a><br>
+@TableName("sign_activity")<br>
+public class SignActivity {<br>
+private Long id;<br>
+private String activityName;<br>
+private String signToken;<br>
+private LocalDateTime expireTime;<br>
+private LocalDateTime createTime;<br>
+}<br>
+5.2 签到记录实体<br>
+import com.baomidou.mybatisplus.annotation.TableName;<br>
+import lombok.Data;<br>
+import java.time.LocalDateTime;</p>
+<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DaTa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DaTa">@DaTa</a><br>
+@TableName("sign_record")<br>
+public class SignRecord {<br>
+private Long id;<br>
+private Long activityId;<br>
+private Long userId;<br>
+private LocalDateTime signTime;<br>
+}</p>
+<p>六、核心接口开发与业务逻辑<br>
+我完成全部后端接口开发，包含页面跳转、动态二维码生成、签到三重校验核心逻辑，解决代签、过期、重复签到三大痛点。<br>
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;<br>
+import org.springframework.stereotype.Controller;<br>
+import org.springframework.web.bind.annotation.GetMapping;<br>
+import org.springframework.web.bind.annotation.RequestMapping;<br>
+import org.springframework.web.bind.annotation.ResponseBody;<br>
+import javax.annotation.Resource;<br>
+import javax.servlet.http.HttpServletResponse;<br>
+import java.time.LocalDateTime;<br>
+import java.util.UUID;</p>
+<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/controller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/controller">@controller</a><br>
+<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/RequestMapping/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/RequestMapping">@RequestMapping</a>("/sign")<br>
+public class SignController {</p>
+<pre class="notranslate"><code class="notranslate">@Resource
+private QRCodeUtil qrCodeUtil;
+@Resource
+private SignActivityService activityService;
+@Resource
+private SignRecordService recordService;
+
+// 跳转前端签到页面
+@GetMapping("/index")
+public String toSignPage(){
+    return "signIndex";
+}
+
+// 生成5分钟时效动态二维码
+@GetMapping("/create")
+public void createQr(Long activityId, HttpServletResponse response) throws Exception {
+    String token = UUID.randomUUID().toString().replace("-", "");
+    LocalDateTime expire = LocalDateTime.now().plusMinutes(5);
+    SignActivity activity = new SignActivity();
+    activity.setId(activityId);
+    activity.setSignToken(token);
+    activity.setExpireTime(expire);
+    activityService.updateById(activity);
+    String url = "http://localhost:8080/sign/check?token=" + token + "&amp;activityId=" + activityId;
+    qrCodeUtil.createQrCode(url, 300, 300, response);
+}
+
+// 签到校验核心接口
+@ResponseBody
+@GetMapping("/check")
+public String doSign(String token, Long activityId, Long userId) {
+    // 1. 校验二维码合法性
+    SignActivity activity = activityService.getById(activityId);
+    if (activity == null || !activity.getSignToken().equals(token)) {
+        return "签到二维码无效！";
+    }
+    // 2. 校验二维码是否过期
+    if (LocalDateTime.now().isAfter(activity.getExpireTime())) {
+        return "二维码已过期，请重新生成！";
+    }
+    // 3. 防重复签到校验
+    LambdaQueryWrapper&lt;SignRecord&gt; wrapper = new LambdaQueryWrapper&lt;&gt;();
+    wrapper.eq(SignRecord::getActivityId, activityId).eq(SignRecord::getUserId, userId);
+    if (recordService.count(wrapper) &gt; 0) {
+        return "你已完成本次签到，请勿重复打卡！";
+    }
+    // 写入签到数据
+    SignRecord record = new SignRecord();
+    record.setActivityId(activityId);
+    record.setUserId(userId);
+    record.setSignTime(LocalDateTime.now());
+    recordService.save(record);
+    return "签到成功！";
+}
+</code></pre>
+<p>}</p>
+<p>七、后端核心难点与解决方案<br>
+7.1 解决截图代签漏洞<br>
+传统固定二维码可无限截图代签，我通过动态UUID令牌 + 5分钟时效机制，每次刷新二维码都会更新全新令牌，超时自动失效，从根源杜绝代签。<br>
+7.2 解决重复签到问题<br>
+采用双层防护：代码层查询拦截重复请求，数据库联合唯一索引兜底，彻底解决高并发下重复数据插入问题。<br>
+7.3 前后端联调适配<br>
+适配前端页面渲染规则，二维码以图片流形式输出，添加时间戳防缓存机制，保证前端刷新即可更新最新二维码，完美配合前端交互逻辑。<br>
+八、个人开发总结<br>
+本次项目我完成后端全套开发工作，从数据库设计、工具封装、业务接口开发到安全逻辑优化、前后端联调全部落地。通过本次实战，我熟练掌握了SpringBoot接口开发、ZXing二维码开发、数据库索引优化、接口安全校验等核心技术，深刻理解了时效业务、防重业务的开发思路，提升了问题排查与后端服务优化能力，也熟悉了前后端协同开发的流程与规范。</p></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://lzy718.github.io/student.github.io">Blog Title</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行 "+diffDay+" 天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.disabled=true;
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","lzy718/student.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>
